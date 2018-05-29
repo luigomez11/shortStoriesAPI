@@ -1,0 +1,11 @@
+language: node_js
+node_js: node
+services:
+- mongodb
+deploy:
+  provider: heroku
+  api_key: !binary |-
+    Aw==
+  app: warm-springs-25859
+  on:
+    repo: luigomez11/shortStoriesAPI

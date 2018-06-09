@@ -4,7 +4,11 @@ const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const morgan = require('morgan');
+const passport = require('passport');
 const cors = require('cors');
+
+const { router: usersRouter } = require('./users');
+const { router: authRouter, localStrategy, jwtStrategy } = require('./auth');
 
 mongoose.Promise = global.Promise;
 
@@ -12,24 +16,41 @@ const { PORT, DATABASE_URL } = require('./config');
 const { Story } = require('./models');
 
 const app = express();
-app.use(bodyParser.json());
+
 app.use(morgan('common'));
+app.use(bodyParser.json());
 app.use(express.static('public'));
-app.use(
-    cors()
-);
+
+// CORS ?
+app.use(function (req, res, next) {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+    res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE');
+    if (req.method === 'OPTIONS') {
+      return res.send(204);
+    }
+    next();
+});
+
+passport.use(localStrategy);
+passport.use(jwtStrategy);
+
+app.use('/users/', usersRouter);
+app.use('/auth/', authRouter);
+
+const jwtAuth = passport.authenticate('jwt', { session: false });
 
 app.get('/', (req, res) => {
     res.sendFile(__dirname + '/public/index.html');
 });
 
-app.get('/stories', (req, res, next) => {
+app.get('/stories', jwtAuth, (req, res, next) => {
     Story.find()
         .then(stories => res.json(stories.map(story => story.serialize())))
         .catch(next);
 });
 
-app.get('/stories/story/:id', (req, res, next) => {
+app.get('/stories/story/:id', jwtAuth, (req, res, next) => {
     const id = req.params.id;
     Story.findById(id)
         .then(story => {
@@ -43,7 +64,7 @@ app.get('/stories/story/:id', (req, res, next) => {
         .catch(next);
 });
 
-app.post('/stories', (req, res, next) => {
+app.post('/stories', jwtAuth, (req, res, next) => {
     const { title, body } = req.body;
     if(!(title && body)){
         const err = new Error('Missing parameters in request body');
@@ -58,7 +79,7 @@ app.post('/stories', (req, res, next) => {
         .catch(next);
 });
 
-app.put('/stories/story/:id', (req, res, next) => {
+app.put('/stories/story/:id', jwtAuth, (req, res, next) => {
     const id = req.params.id;
     const updateItem = {};
     const updateFields = ['title', 'body', 'likes'];
@@ -83,7 +104,7 @@ app.put('/stories/story/:id', (req, res, next) => {
         .catch(next);
 });
 
-app.delete('/stories/story/:id', (req, res, next) => {
+app.delete('/stories/story/:id', jwtAuth, (req, res, next) => {
     const id = req.params.id;
     Story.findByIdAndRemove(id)
         .then(count => {

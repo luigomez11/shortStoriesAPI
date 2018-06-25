@@ -64,14 +64,20 @@ app.get('/stories/story/:id', jwtAuth, (req, res, next) => {
         .catch(next);
 });
 
+app.get('/stories/:user', jwtAuth, (req,res,next) =>{
+    Story.find({user: req.params.user})
+        .then(stories => res.json(stories.map(story => story.serialize())))
+        .catch(next);
+});
+
 app.post('/stories', jwtAuth, (req, res, next) => {
-    const { title, body } = req.body;
-    if(!(title && body)){
+    const { title, body, user } = req.body;
+    if(!(title && body && user)){
         const err = new Error('Missing parameters in request body');
         err.status = 400;
         return next(err);
     }
-    Story.create({title, body})
+    Story.create({title, body, user})
         .then(newStory => {
             res.status(201)
             .json(newStory.serialize())

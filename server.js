@@ -1,4 +1,5 @@
 'use strict';
+
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
@@ -35,8 +36,8 @@ app.use(function (req, res, next) {
 passport.use(localStrategy);
 passport.use(jwtStrategy);
 
-app.use('/users/', usersRouter);
-app.use('/auth/', authRouter);
+app.use('/users', usersRouter);
+app.use('/auth', authRouter);
 
 const jwtAuth = passport.authenticate('jwt', { session: false });
 
